@@ -17,9 +17,9 @@ public class MainActivity extends AppCompatActivity {
 //
 //    public static final int REQUEST_CODE = 1;
 
-    private ProgressDialog mDialog;
+//    private ProgressDialog mDialog;
 
-    private SaveTask mSaveTask;
+    private SaveTask mSaveTask;// переменная для переопределения метода onDestroy
     private GetTask mGetTask;
 
 
@@ -56,9 +56,9 @@ public class MainActivity extends AppCompatActivity {
             case R.id.button6:
                 break;
             case R.id.button7:
-                mSaveTask = new SaveTask();
+                mSaveTask = new SaveTask();//запусеаем AsyncTask
                 mSaveTask.execute(
-                        new Student("Ivan", "Ivanov", 22),
+                        new Student("Ivan", "Ivanov", 22),//и передаем новых студентов
                         new Student("Ivan", "Ivanov", 22),
                         new Student("Ivan", "Ivanov", 22),
                         new Student("Ivan", "Ivanov", 22),
@@ -84,8 +84,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
 
-        if (mSaveTask != null) {
-            mSaveTask.cancel(true);
+        if (mSaveTask != null) {//если AsyncTask чтото делает
+            mSaveTask.cancel(true);//false-таск не остановит, фактически не будет вызван  onPostExecute,
+            // true-попробует остановить, но не факт что остановит
         }
 
         if (mGetTask != null) {
@@ -93,69 +94,65 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    class SaveTask extends AsyncTask<Student, Integer, Integer>{
+    //AsyncTask для сохранения студента(однозадачные)
+    class SaveTask extends AsyncTask<Student, Integer, Integer>{//(принимает студентов, тип прогресса(ск студ. мы уже сохр), общ число сохр студ//возвращает long(id"шку))
         private ProgressDialog mDialog;
-
 
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
 
-            mDialog = new ProgressDialog(MainActivity.this);
+            mDialog = new ProgressDialog(MainActivity.this);//говорим пользователю что чтото делается
             mDialog.setMessage("Saving...");
             mDialog.setCancelable(false);
             mDialog.show();
         }
 
         @Override
-        protected Integer doInBackground(Student... params) {
-            Student student = params[0];
+        protected Integer doInBackground(Student... params) {//doInBackground добавляет по умолчанию
+//            Student student = params[0];//возвращает одного студента
 //            long id = 0;
-
             DataBaseHelper helper = new DataBaseHelper(MainActivity.this);
 //            id = helper.saveStudent(student);
-
-            for (int i = 0; i< params.length; i++) {
-                if (isCancelled()){
-                    helper.saveStudent(params[i]);
+            for (int i = 0; i < params.length; i++) {//счетчик студентов сколько передалось
+                if (!isCancelled()){//не остановлен ли этот таск?
+                    helper.saveStudent(params[i]);//текущий студент
                     try {
                         TimeUnit.SECONDS.sleep(2);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    publishProgress(i + 1, params.length);
+                    publishProgress(i + 1, params.length);//для прогресса
                 }
-
             }
-
 //            try {
-//                TimeUnit.SECONDS.sleep(5);
+//                TimeUnit.SECONDS.sleep(5);//сон на 5 сек
 //            } catch (InterruptedException e) {
 //                e.printStackTrace();
 //            }
-
             return params.length;
         }
 
+        //выводим прогрес
         @Override
-        protected void onProgressUpdate(Integer... values) {
+        protected void onProgressUpdate(Integer... values) {//принимает массив чисел
             mDialog.setMessage(String.format("Saved %s students from %s", values[0], values[1]));
         }
 
+        //передаем на интерфейс ответ что мы сохранили студента и его id"шка вот такая
         @Override
         protected void onPostExecute(Integer aLong) {
-            if (mDialog != null) {
-                mDialog.dismiss();
+            if (mDialog != null) {//если mDialog существует
+                mDialog.dismiss();//мы его закрываем
             }
             Toast.makeText(MainActivity.this, String.valueOf(aLong), Toast.LENGTH_SHORT).show();
-//            ((Button)findViewById(R.id.button7)).setText(String.valueOf(aLong));
+
+//            ((Button)findViewById(R.id.button7)).setText(String.valueOf(aLong));//id"шку присвоим кнопке//ничего не произойдет
         }
-
-
-
     }
 
-    class GetTask extends AsyncTask<Long, Void, Student>{
+    //AsyncTask для чтения студента
+    class GetTask extends AsyncTask<Long, Void, Student>{//принимает id, прогресса нет, возвращает студента
         private ProgressDialog mDialog;
 
         @Override
@@ -163,14 +160,14 @@ public class MainActivity extends AppCompatActivity {
             super.onPreExecute();
 
             mDialog = new ProgressDialog(MainActivity.this);
-            mDialog.setMessage("Saving...");
+            mDialog.setMessage("Getting...");
             mDialog.setCancelable(false);
             mDialog.show();
         }
 
         @Override
         protected Student doInBackground(Long... params) {
-            DataBaseHelper helper = new DataBaseHelper(MainActivity.this);
+            DataBaseHelper helper = new DataBaseHelper(MainActivity.this);//получаем DataBaseHelper
 
             return helper.getStudent(params[0]);
         }
